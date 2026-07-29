@@ -1,0 +1,28 @@
+MEDSAFE RACE LAB - SAFETY-CRITICAL SOFTWARE BONUS ASSIGNMENT
+
+Course: BIO-MED SW / Software as a Medical Device
+Institution: Shamoon College of Engineering (SCE)
+
+SUBMITTING TEAM
+
+1. Full name: ______________________________________________
+   ID number: ______________________________________________
+
+2. Full name: ______________________________________________
+   ID number: ______________________________________________
+
+3. Full name: ______________________________________________
+   ID number: ______________________________________________
+
+Team leader (optional): _____________________________________
+
+GitHub repository URL:
+________________________________________________________________
+
+Submission date: _____________________________________________
+
+DECLARATION
+
+We confirm that the submitted project is an educational software simulation.
+It is not a medical device and is not intended for clinical use.
+
