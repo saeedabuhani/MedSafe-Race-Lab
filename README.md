@@ -8,6 +8,19 @@ MedSafe Race Lab is an educational Java desktop application that demonstrates a 
 
 > **Educational simulation only. This software must never be used for diagnosis, treatment, dosage calculation, or any other clinical purpose.**
 
+![Java](https://img.shields.io/badge/Java-17-orange)
+![Tests](https://img.shields.io/badge/tests-8%20passing-brightgreen)
+![Maven](https://img.shields.io/badge/build-Maven-c71a36)
+
+### [▶ Live Demo](https://medsafe-race-lab.netlify.app)
+
+The live demo is a JavaScript re-implementation of the race timeline (unsafe versus `synchronized`, `ReentrantLock` and `Semaphore(1)`) that you can step through in the browser. The real project is the JavaFX desktop application in this repository.
+
+| | |
+|---|---|
+| ![Unsafe run](docs/screenshots/01-unsafe-run.png) | ![synchronized run](docs/screenshots/02-synchronized.png) |
+| ![Login screen](docs/screenshots/login-screen.png) | ![Simulator, unsafe mode](docs/screenshots/simulator-unsafe.png) |
+
 ## What the application includes
 
 - A login screen with PBKDF2 password verification.
@@ -131,6 +144,24 @@ src/main/java/com/medsafe/racelab/
 - U.S. GAO, [Patriot Missile Defense: Software Problem Led to System Failure](https://www.gao.gov/products/imtec-92-26).
 - U.S. House Committee, [Boeing 737 MAX Investigation](https://democrats-transportation.house.gov/committee-activity/boeing-737-max-investigation).
 - NTSB, [Developmental Automated Driving System Fatal Collision Report](https://www.ntsb.gov/investigations/accidentreports/reports/har1903.pdf).
+
+## Tests
+
+```bash
+mvn clean test
+```
+
+Result: 8 tests pass (3 in `AuthServiceTest`, 5 in `SimulationEngineTest`).
+
+## Security notes
+
+- Passwords are verified with PBKDF2. The demo account above is local and exists only to structure the demonstration; no personal data is stored.
+- This is a safety-education project about concurrency bugs. It must never be used for clinical purposes.
+
+## Roadmap
+
+- Publish a runnable JAR as a GitHub Release.
+- Add a CI workflow that runs `mvn test`.
 
 ## Submission
 
