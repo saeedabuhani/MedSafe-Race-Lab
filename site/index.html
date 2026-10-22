@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MedSafe Race Lab – interactive race-condition timeline</title>
+<meta name="description" content="Interactive re-implementation of the MedSafe Race Lab scenario: an unsafe interleaving versus synchronized, ReentrantLock and Semaphore(1).">
+<style>
+:root{--bg:#f6f8fb;--card:#fff;--ink:#0f172a;--mut:#475569;--line:#dbe2ea;--acc:#0e7490;--ok:#15803d;--warn:#b45309;--bad:#b91c1c;--okbg:#dcfce7;--badbg:#fee2e2}
+@media (prefers-color-scheme:dark){:root{--bg:#0b1220;--card:#111a2e;--ink:#e6edf7;--mut:#9fb0c7;--line:#243252;--acc:#22d3ee;--ok:#4ade80;--warn:#fbbf24;--bad:#f87171;--okbg:#0f2f1c;--badbg:#3b1212}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px}
+.banner{background:#0f172a;color:#fff;font-size:13px;padding:8px 16px;text-align:center}.banner a{color:#67e8f9}
+header{padding:32px 0 8px}h1{margin:0 0 6px;font-size:clamp(26px,5vw,38px);line-height:1.15}p.lead{color:var(--mut);margin:0 0 16px;max-width:70ch}
+.cta{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 4px}.btn{display:inline-block;padding:9px 16px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);text-decoration:none;font-weight:600;font-size:14px}.btn.p{background:var(--acc);border-color:var(--acc);color:#fff}
+@media (prefers-color-scheme:dark){.btn.p{color:#04222b}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0}
+h2{font-size:20px;margin:0 0 10px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}.tabs button{border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:8px 12px;border-radius:9px;font:600 14px system-ui,sans-serif;cursor:pointer}
+.tabs button[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:#fff}
+@media (prefers-color-scheme:dark){.tabs button[aria-pressed=true]{color:#04222b}}
+.grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}@media(max-width:760px){.grid{grid-template-columns:1fr}}
+.lanes{display:grid;grid-template-columns:1fr 1fr;gap:8px}.lane h3{margin:0 0 6px;font-size:13px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.ev{border-left:4px solid var(--line);background:var(--bg);padding:7px 10px;margin:0 0 6px;border-radius:0 8px 8px 0;font-size:13px;opacity:.25;transition:opacity .25s}
+.ev.on{opacity:1}.ev.warn{border-color:var(--warn)}.ev.bad{border-color:var(--bad);background:var(--badbg)}.ev.ok{border-color:var(--ok)}.ev.wait{border-color:var(--acc);font-style:italic}
+.state{display:grid;grid-template-columns:1fr 1fr;gap:8px}.cell{border:1px solid var(--line);border-radius:10px;padding:10px}.cell small{display:block;color:var(--mut);font-size:12px}.cell b{font-size:18px}
+.cell.changed{outline:2px solid var(--acc)}
+.verdict{margin-top:12px;padding:12px;border-radius:10px;font-weight:600}.verdict.ok{background:var(--okbg);color:var(--ok)}.verdict.bad{background:var(--badbg);color:var(--bad)}.verdict.idle{background:var(--bg);color:var(--mut);font-weight:400}
+.ctl{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.ctl button{padding:8px 14px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:600 14px system-ui,sans-serif;cursor:pointer}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left}td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;font-size:13px;margin:0}
+.shots{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}.shots img{width:100%;border-radius:10px;border:1px solid var(--line)}
+footer{color:var(--mut);font-size:13px;padding:20px 0 40px}a{color:var(--acc)}
+</style>
+</head>
+<body>
+<div class="banner">Interactive demo – a JavaScript re-implementation of the Java scenario (no real threads). <a href="https://github.com/saeedabuhani/MedSafe-Race-Lab">Source on GitHub</a></div>
+<div class="wrap">
+<header>
+<h1>MedSafe Race Lab</h1>
+<p class="lead">A safety-critical race condition in a fictional radiation-therapy controller, shown next to three Java fixes. The real project is a JavaFX desktop app with JUnit tests; this page replays the same scenario step by step.</p>
+<div class="cta"><a class="btn p" href="#sim">Run the simulation</a><a class="btn" href="https://github.com/saeedabuhani/MedSafe-Race-Lab">GitHub</a><a class="btn" href="https://github.com/saeedabuhani/MedSafe-Race-Lab/releases">Downloads (Releases)</a></div>
+<p style="font-size:13px;color:var(--mut)">Educational simulation only. Never use for diagnosis, treatment or dosage.</p>
+</header>
+
+<section class="card" id="sim" aria-labelledby="simh">
+<h2 id="simh">Timeline</h2>
+<div class="tabs" role="group" aria-label="Protection mode">
+<button data-m="unsafe" aria-pressed="true">Unsafe (no protection)</button>
+<button data-m="sync" aria-pressed="false">synchronized</button>
+<button data-m="lock" aria-pressed="false">ReentrantLock</button>
+<button data-m="sem" aria-pressed="false">Semaphore(1)</button>
+</div>
+<div class="grid">
+<div>
+<div class="lanes"><div class="lane"><h3>OperatorThread</h3><div id="opLane"></div></div><div class="lane"><h3>TreatmentThread</h3><div id="trLane"></div></div></div>
+<div class="ctl"><button id="step">Step ▶</button><button id="play">Play all</button><button id="reset">Reset</button></div>
+</div>
+<div>
+<div class="state" id="state" aria-live="polite"></div>
+<div class="verdict idle" id="verdict">Press “Step” to advance one event.</div>
+</div>
+</div>
+</section>
+
+<section class="card">
+<h2>Why this happens</h2>
+<p>The treatment must only start from a <em>complete, verified</em> configuration: X-ray mode needs the beam-spreading target in place, and electron mode needs it out of the beam path. The operator thread changes several fields one after another. Without a guard, the treatment thread can read the state in the middle of that update – mode already <code>X_RAY</code>, target still out, old verification still <code>true</code>.</p>
+<p>The corrected modes make the operator's update and the treatment check mutually exclusive, so the treatment thread simply waits for the full update to finish.</p>
+</section>
+
+<section class="card">
+<h2>Expected results (from the project's test suite)</h2>
+<table><thead><tr><th>Mode</th><th class="n">Controlled runs</th><th class="n">Violations</th></tr></thead><tbody>
+<tr><td>Unsafe</td><td class="n">25</td><td class="n">25</td></tr>
+<tr><td><code>synchronized</code></td><td class="n">25</td><td class="n">0</td></tr>
+<tr><td><code>ReentrantLock</code></td><td class="n">25</td><td class="n">0</td></tr>
+<tr><td><code>Semaphore(1)</code></td><td class="n">25</td><td class="n">0</td></tr>
+</tbody></table>
+<p style="color:var(--mut);font-size:14px;margin-bottom:0">A latch positions both threads at the dangerous boundary so the unsafe run is repeatable on stage; it does not protect the shared state.</p>
+</section>
+
+<section class="card">
+<h2>The mechanism in code</h2>
+<pre id="code"></pre>
+</section>
+
+<section class="card">
+<h2>The desktop app</h2>
+<div class="shots"><img src="img/login-screen.png" alt="Login screen of the JavaFX application" loading="lazy"><img src="img/simulator-unsafe.png" alt="Simulator view showing an unsafe run" loading="lazy"></div>
+</section>
+<footer>Built by Saeed Abuhani · Java 17, JavaFX, Maven, JUnit 5 · <a href="https://github.com/saeedabuhani/MedSafe-Race-Lab">github.com/saeedabuhani/MedSafe-Race-Lab</a></footer>
+</div>
+<script>
+var CODE={
+unsafe:"// UnsafeStrategy - no protection\noperator:  state.setMode(X_RAY); ...setEnergy(25); setTarget(true); setVerified(true);\ntreatment: snapshot = state.snapshot();   // may see a half-updated state",
+sync:"// operator\nsynchronized (state) { finishXRayUpdate(state); }\n// treatment - same monitor\nsynchronized (state) { attemptTreatment(state); }",
+lock:"lock.lock();\ntry { finishXRayUpdate(state); }\nfinally { lock.unlock(); }          // always released",
+sem:"permit.acquire();                    // Semaphore(1): one permit only\ntry { finishXRayUpdate(state); }\nfinally { permit.release(); }"};
+var init={mode:"ELECTRON",energy:"12 MeV",target:"out",verified:"true"};
+function script(m){
+  var A=function(t,k,p){return {l:"op",t:t,k:k||"",p:p||{}}},T=function(t,k,p){return {l:"tr",t:t,k:k||"",p:p||{}}};
+  var upd=[
+    A("Invalidate previous verification.","",{verified:"false"}),
+    A("Energy set to 25 MeV.","",{energy:"25 MeV"}),
+    A("Beam-spreading target moved into place.","",{target:"in"}),
+    A("Complete X-ray configuration verified.","ok",{verified:"true"})];
+  var start=A("Operator begins ELECTRON to X_RAY.","",{mode:"X_RAY"});
+  var warn=A("Mode is X_RAY but target is out and verification is stale.","warn");
+  if(m==="unsafe") return [start,warn,
+    T("Reads state: mode=X_RAY, energy=12 MeV, target=out, verified=true.","warn"),
+    T("SAFETY VIOLATION: treatment starts with an inconsistent configuration.","bad",{_v:"bad"})].concat(upd);
+  var via={sync:"synchronized monitor",lock:"ReentrantLock",sem:"Semaphore(1) permit"}[m];
+  return [A("Acquire "+via+".","wait"),start,warn,
+    T("Tries to acquire "+via+" - waits.","wait")].concat(upd,[
+    A("Release "+via+".","ok"),
+    T("Acquired. Reads state: mode=X_RAY, energy=25 MeV, target=in, verified=true.","ok"),
+    T("Treatment starts with a consistent configuration.","ok",{_v:"ok"})]);
+}
+var mode="unsafe",ev=[],i=0,st={},timer=null;
+function $(s){return document.querySelector(s)}
+function draw(){
+  var op=$("#opLane"),tr=$("#trLane");op.innerHTML="";tr.innerHTML="";
+  ev.forEach(function(e,idx){var d=document.createElement("div");d.className="ev "+e.k+(idx<i?" on":"");d.textContent=e.t;(e.l==="op"?op:tr).appendChild(d)});
+  var labels={mode:"Mode",energy:"Energy",target:"Target in beam",verified:"Verified"};
+  $("#state").innerHTML=Object.keys(labels).map(function(k){return '<div class="cell '+(st._c===k?"changed":"")+'"><small>'+labels[k]+"</small><b>"+st[k]+"</b></div>"}).join("");
+  $("#code").textContent=CODE[mode];
+}
+function setVerdict(v){var el=$("#verdict");el.className="verdict "+(v||"idle");
+  el.textContent=v==="bad"?"Safety violation: the treatment started while the target was out of position.":v==="ok"?"Safe: the treatment waited for the complete update.":"Press “Step” to advance one event."}
+function step(){if(i>=ev.length){stop();return}var e=ev[i++];st._c=null;for(var k in e.p){if(k==="_v")continue;st[k]=e.p[k];st._c=k}if(e.p._v)setVerdict(e.p._v);draw();if(i>=ev.length)stop()}
+function stop(){clearInterval(timer);timer=null;$("#play").textContent="Play all"}
+function reset(){stop();ev=script(mode);i=0;st=Object.assign({},init);setVerdict();draw()}
+document.querySelectorAll(".tabs button").forEach(function(b){b.onclick=function(){document.querySelectorAll(".tabs button").forEach(function(x){x.setAttribute("aria-pressed",x===b)});mode=b.dataset.m;reset()}});
+$("#step").onclick=step;$("#reset").onclick=reset;
+$("#play").onclick=function(){if(timer){stop();return}if(i>=ev.length)reset();$("#play").textContent="Pause";timer=setInterval(step,700)};
+reset();
+</script>
+</body>
+</html>
