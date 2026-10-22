@@ -47,6 +47,16 @@ The account is local and intended only to structure the demonstration. No patien
 
 No SQL database is required. JavaFX dependencies are downloaded automatically by Maven.
 
+## Download and run (no Maven needed)
+
+Download `medsafe-race-lab-1.0.0-all.jar` from the [latest release](https://github.com/saeedabuhani/MedSafe-Race-Lab/releases/latest) and run it with Java 17 or newer:
+
+```bash
+java -jar medsafe-race-lab-1.0.0-all.jar
+```
+
+The JAR bundles the JavaFX libraries for **Windows x64** (the platform it was built on). On macOS or Linux, build from source with `mvn package` or run `mvn javafx:run`.
+
 ## Run in VS Code
 
 1. Open the `MedSafe-Race-Lab` folder in VS Code.
@@ -160,7 +170,7 @@ Result: 8 tests pass (3 in `AuthServiceTest`, 5 in `SimulationEngineTest`).
 
 ## Roadmap
 
-- Publish a runnable JAR as a GitHub Release.
+- Build the fat JAR for macOS and Linux in CI as well.
 - Add a CI workflow that runs `mvn test`.
 
 ## Submission
