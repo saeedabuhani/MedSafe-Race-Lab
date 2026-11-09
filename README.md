@@ -181,3 +181,4 @@ Result: 8 tests pass (3 in `AuthServiceTest`, 5 in `SimulationEngineTest`).
 4. Submit the GitHub link and the report in `docs/`.
 5. Do not submit an EXE file.
 
+© 2026 Saeed Abuhani – All rights reserved
